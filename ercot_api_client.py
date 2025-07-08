@@ -35,7 +35,9 @@ def get_token() -> str:
     """Returns a token for the current ERCOT session.  Lasts one hour."""
     # Sign In/Authenticate
     auth_response = requests.post(
-        AUTH_URL.format(username = USERNAME, password=PASSWORD), 
+        AUTH_URL.format(
+            username = USERNAME, 
+            password=PASSWORD), 
         timeout=30)
 
     # Retrieve access token
