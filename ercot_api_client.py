@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 import requests
 import os
 
@@ -19,7 +19,20 @@ AUTH_URL = "https://ercotb2c.b2clogin.com/ercotb2c.onmicrosoft.com/B2C_1_PUBAPI-
 
 LMP_BY_ELECTRICAL_BUS = "https://api.ercot.com/api/public-reports/np6-787-cd/lmp_electrical_bus\
 ?SCEDTimestampFrom={sced_from}\
-&SCEDTimestampTo={sced_to}"
+&SCEDTimestampTo={sced_to}\
+&electricalBus={bus}"
+
+LMPS_NODES_ZONES_HUBS = "https://api.ercot.com/api/public-reports/np6-788-cd/lmp_node_zone_hub\
+?SCEDTimestampFrom={sced_from}\
+&SCEDTimestampTo={sced_to}\
+&settlementPoint={settlement_point}"
+
+
+def _get_headers(access_token: str) -> dict[str,str]:
+    return {'Ocp-Apim-Subscription-Key': SUBSCRIPTION_KEY, "Authorization": "Bearer " + access_token,}
+
+def _to_sced_format(dt: datetime) -> str:
+    return dt.strftime('%Y-%m-%dT%H:%M:%S')
 
 def get_token() -> str:
     # Sign In/Authenticate
@@ -29,23 +42,50 @@ def get_token() -> str:
     access_token = auth_response.json().get("access_token")
     return access_token
 
+def get_lmps_for_nodes_zones_and_hubs(
+        access_token: str, 
+        sced_from: datetime, 
+        sced_to: datetime, 
+        settlement_point: str) -> list:
+
+    response = requests.get(
+        headers = _get_headers(access_token),
+        url = LMPS_NODES_ZONES_HUBS.format(
+            sced_from=_to_sced_format(sced_from), 
+            sced_to=_to_sced_format(sced_to), 
+            settlement_point=settlement_point
+        )
+    )
+
+    if response.status_code != 200:
+        raise RuntimeError(response.json())
+
+    return response.json()['data']
+
 def get_lmps_by_bus(access_token) -> str:
-    token = get_token()
     
     sced_from = '2025-07-07T05:00:00'
     sced_to = '2025-07-07T05:30:00'
-    bus = 'LZ_SOUTH'
+    bus = 'NUE_NUECESG9'
 
     lmp_response = requests.get(
-        headers={'Ocp-Apim-Subscription-Key': SUBSCRIPTION_KEY, "Authorization": "Bearer " + access_token,},
-        url=LMP_BY_ELECTRICAL_BUS.format(sced_from=sced_from, sced_to=sced_to))
-    
-    print(lmp_response)
+        headers=_get_headers(access_token),
+        url=LMP_BY_ELECTRICAL_BUS.format(sced_from=sced_from, sced_to=sced_to, bus=bus))
     
     print(lmp_response.json())
 
     raise NotImplementedError()
 
+
+print(_to_sced_format(datetime.now()))
+
 access_token = get_token()
 print(access_token)
-get_lmps_by_bus(access_token)
+lmps = get_lmps_for_nodes_zones_and_hubs(
+    access_token=access_token,
+    sced_from=datetime.strptime('2025/07/07 05:00:00', '%Y/%m/%d %H:%M:%S'),
+    sced_to=datetime.strptime('2025/07/07 05:30:00', '%Y/%m/%d %H:%M:%S'),
+    settlement_point='LZ_HOUSTON')
+
+for lmp in lmps:
+    print(lmp)
