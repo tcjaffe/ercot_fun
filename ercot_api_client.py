@@ -62,30 +62,46 @@ def get_lmps_for_nodes_zones_and_hubs(
 
     return response.json()['data']
 
-def get_lmps_by_bus(access_token) -> str:
-    
-    sced_from = '2025-07-07T05:00:00'
-    sced_to = '2025-07-07T05:30:00'
-    bus = 'NUE_NUECESG9'
+def get_lmps_by_bus(access_token: str, 
+        sced_from: datetime, 
+        sced_to: datetime, 
+        bus: str) -> list:
 
     lmp_response = requests.get(
         headers=_get_headers(access_token),
-        url=LMP_BY_ELECTRICAL_BUS.format(sced_from=sced_from, sced_to=sced_to, bus=bus))
+        url=LMP_BY_ELECTRICAL_BUS.format(
+            sced_from=_to_sced_format(sced_from), 
+            sced_to=_to_sced_format(sced_to), 
+            bus=bus
+        ))
     
-    print(lmp_response.json())
+    if lmp_response.status_code != 200:
+        raise RuntimeError(lmp_response.json())
+    
+    return lmp_response.json()['data']
 
-    raise NotImplementedError()
-
-
-print(_to_sced_format(datetime.now()))
 
 access_token = get_token()
-print(access_token)
-lmps = get_lmps_for_nodes_zones_and_hubs(
+sced_from = datetime.strptime('2025/07/07 05:00:00', '%Y/%m/%d %H:%M:%S')
+sced_to = datetime.strptime('2025/07/07 05:30:00', '%Y/%m/%d %H:%M:%S')
+
+print('LMPs for load zone LZ_HOUSTON:')
+lz_houston_lmps = get_lmps_for_nodes_zones_and_hubs(
     access_token=access_token,
-    sced_from=datetime.strptime('2025/07/07 05:00:00', '%Y/%m/%d %H:%M:%S'),
-    sced_to=datetime.strptime('2025/07/07 05:30:00', '%Y/%m/%d %H:%M:%S'),
+    sced_from=sced_from,
+    sced_to=sced_to,
     settlement_point='LZ_HOUSTON')
 
-for lmp in lmps:
+for lmp in lz_houston_lmps:
+    print(lmp)
+
+print('LMPs for electrical bus PSA_PUN1:')
+bus_lmps = get_lmps_by_bus(
+    access_token=access_token,
+    sced_from=sced_from,
+    sced_to=sced_to,
+    bus='PSA_PUN1'
+)
+
+for lmp in bus_lmps:
     print(lmp)
