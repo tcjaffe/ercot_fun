@@ -1,8 +1,6 @@
 from datetime import datetime
-import requests
 import os
-
-SCED_DT_FORMAT = 'yyyy-MM-ddTH24:mm:ss'
+import requests
 
 SUBSCRIPTION_KEY = os.getenv('ERCOT_SUBSCRIPTION_KEY')
 USERNAME = os.getenv('ERCOT_USERNAME')
@@ -16,11 +14,6 @@ AUTH_URL = "https://ercotb2c.b2clogin.com/ercotb2c.onmicrosoft.com/B2C_1_PUBAPI-
 &scope=openid+fec253ea-0d06-4272-a5e6-b478baeecd70+offline_access\
 &client_id=fec253ea-0d06-4272-a5e6-b478baeecd70\
 &response_type=id_token"
-
-LMP_BY_ELECTRICAL_BUS = "https://api.ercot.com/api/public-reports/np6-787-cd/lmp_electrical_bus\
-?SCEDTimestampFrom={sced_from}\
-&SCEDTimestampTo={sced_to}\
-&electricalBus={bus}"
 
 LMPS_NODES_ZONES_HUBS = "https://api.ercot.com/api/public-reports/np6-788-cd/lmp_node_zone_hub\
 ?SCEDTimestampFrom={sced_from}\
@@ -62,24 +55,6 @@ def get_lmps_for_nodes_zones_and_hubs(
 
     return response.json()['data']
 
-def get_lmps_by_bus(access_token: str, 
-        sced_from: datetime, 
-        sced_to: datetime, 
-        bus: str) -> list:
-
-    lmp_response = requests.get(
-        headers=_get_headers(access_token),
-        url=LMP_BY_ELECTRICAL_BUS.format(
-            sced_from=_to_sced_format(sced_from), 
-            sced_to=_to_sced_format(sced_to), 
-            bus=bus
-        ))
-    
-    if lmp_response.status_code != 200:
-        raise RuntimeError(lmp_response.json())
-    
-    return lmp_response.json()['data']
-
 
 access_token = get_token()
 sced_from = datetime.strptime('2025/07/07 05:00:00', '%Y/%m/%d %H:%M:%S')
@@ -93,15 +68,4 @@ lz_houston_lmps = get_lmps_for_nodes_zones_and_hubs(
     settlement_point='LZ_HOUSTON')
 
 for lmp in lz_houston_lmps:
-    print(lmp)
-
-print('LMPs for electrical bus PSA_PUN1:')
-bus_lmps = get_lmps_by_bus(
-    access_token=access_token,
-    sced_from=sced_from,
-    sced_to=sced_to,
-    bus='PSA_PUN1'
-)
-
-for lmp in bus_lmps:
     print(lmp)
