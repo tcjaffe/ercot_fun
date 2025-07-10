@@ -71,12 +71,17 @@ def get_lmps_for_nodes_zones_and_hubs(
     return response.json()['data']
 
 
-print('LMPs for load zone LZ_HOUSTON:')
-lz_houston_lmps = get_lmps_for_nodes_zones_and_hubs(
-    access_token=get_token(),
-    sced_from=datetime.strptime('2025/07/07 05:00:00', '%Y/%m/%d %H:%M:%S'),
-    sced_to=datetime.strptime('2025/07/07 05:30:00', '%Y/%m/%d %H:%M:%S'),
-    settlement_point='LZ_HOUSTON')
+load_zones = ['LZ_NORTH', 'LZ_SOUTH', 'LZ_WEST', 'LZ_HOUSTON']
+token = get_token()
 
-for lmp in lz_houston_lmps:
-    print(lmp)
+for lz in load_zones:
+    print(f'LMPs for load zone {lz}:')
+    lz_houston_lmps = get_lmps_for_nodes_zones_and_hubs(
+        access_token=token,
+        sced_from=datetime.strptime(
+            '2025/07/07 05:00:00', '%Y/%m/%d %H:%M:%S'),
+        sced_to=datetime.strptime('2025/07/07 05:30:00', '%Y/%m/%d %H:%M:%S'),
+        settlement_point=lz)
+
+    for lmp in lz_houston_lmps:
+        print(lmp)
