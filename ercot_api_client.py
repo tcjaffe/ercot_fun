@@ -1,6 +1,6 @@
 """A small client for interacting with ERCOT's REST API."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 import requests
 
@@ -18,6 +18,7 @@ oauth2/v2.0/token\
 &client_id=fec253ea-0d06-4272-a5e6-b478baeecd70\
 &response_type=id_token"
 
+# URL to pull LMPs for loading zones, hubs and nodes.
 LMPS_NODES_ZONES_HUBS = "https://api.ercot.com/api/public-reports/np6-788-cd/lmp_node_zone_hub\
 ?SCEDTimestampFrom={sced_from}\
 &SCEDTimestampTo={sced_to}\
@@ -71,16 +72,20 @@ def get_lmps_for_nodes_zones_and_hubs(
     return response.json()['data']
 
 
-load_zones = ['LZ_NORTH', 'LZ_SOUTH', 'LZ_WEST', 'LZ_HOUSTON']
+# Get the token first so you can use it in subsequent API calls.
 token = get_token()
 
-for lz in load_zones:
+# I query for a 30 minute datetime range from the prior day.
+# In the future I should incorporate timezone logic so I don't need to do prior day.
+sced_to_dt = datetime.now() - timedelta(minutes=5, days=1)
+sced_from_dt = sced_to_dt - timedelta(minutes=30)
+
+for lz in ['LZ_NORTH', 'LZ_SOUTH', 'LZ_WEST', 'LZ_HOUSTON']:
     print(f'LMPs for load zone {lz}:')
     lz_houston_lmps = get_lmps_for_nodes_zones_and_hubs(
         access_token=token,
-        sced_from=datetime.strptime(
-            '2025/07/07 05:00:00', '%Y/%m/%d %H:%M:%S'),
-        sced_to=datetime.strptime('2025/07/07 05:30:00', '%Y/%m/%d %H:%M:%S'),
+        sced_from=sced_from_dt,
+        sced_to=sced_to_dt,
         settlement_point=lz)
 
     for lmp in lz_houston_lmps:
