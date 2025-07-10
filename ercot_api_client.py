@@ -1,3 +1,5 @@
+"""A small client for interacting with ERCOT's REST API."""
+
 from datetime import datetime
 import os
 import requests
@@ -22,39 +24,42 @@ LMPS_NODES_ZONES_HUBS = "https://api.ercot.com/api/public-reports/np6-788-cd/lmp
 &settlementPoint={settlement_point}"
 
 
-def _get_headers(access_token: str) -> dict[str,str]:
+def _get_headers(access_token: str) -> dict[str, str]:
     return {
-        'Ocp-Apim-Subscription-Key': SUBSCRIPTION_KEY, 
+        'Ocp-Apim-Subscription-Key': SUBSCRIPTION_KEY,
         "Authorization": f"Bearer {access_token}",
     }
 
+
 def _to_sced_format(dt: datetime) -> str:
     return dt.strftime('%Y-%m-%dT%H:%M:%S')
+
 
 def get_token() -> str:
     """Returns a token for the current ERCOT session.  Lasts one hour."""
     # Sign In/Authenticate
     auth_response = requests.post(
         AUTH_URL.format(
-            username = USERNAME, 
-            password=PASSWORD), 
+            username=USERNAME,
+            password=PASSWORD),
         timeout=30)
 
     # Retrieve access token
     return auth_response.json().get("access_token")
 
+
 def get_lmps_for_nodes_zones_and_hubs(
-        access_token: str, 
-        sced_from: datetime, 
-        sced_to: datetime, 
+        access_token: str,
+        sced_from: datetime,
+        sced_to: datetime,
         settlement_point: str) -> list:
     """Returns a list of lmps for a given timestamp range and settlement_point, eg 'LZ_NORTH'"""
 
     response = requests.get(
-        headers = _get_headers(access_token),
-        url = LMPS_NODES_ZONES_HUBS.format(
-            sced_from=_to_sced_format(sced_from), 
-            sced_to=_to_sced_format(sced_to), 
+        headers=_get_headers(access_token),
+        url=LMPS_NODES_ZONES_HUBS.format(
+            sced_from=_to_sced_format(sced_from),
+            sced_to=_to_sced_format(sced_to),
             settlement_point=settlement_point
         ),
         timeout=30
@@ -64,7 +69,6 @@ def get_lmps_for_nodes_zones_and_hubs(
         raise RuntimeError(response.json())
 
     return response.json()['data']
-
 
 
 print('LMPs for load zone LZ_HOUSTON:')
