@@ -2,6 +2,7 @@
 
 from datetime import datetime, timedelta
 import os
+import pytz
 import requests
 
 SUBSCRIPTION_KEY = os.getenv('ERCOT_SUBSCRIPTION_KEY')
@@ -33,7 +34,9 @@ def _get_headers(access_token: str) -> dict[str, str]:
 
 
 def _to_sced_format(dt: datetime) -> str:
-    return dt.strftime('%Y-%m-%dT%H:%M:%S')
+    # ERCOT's SCED timestamps assume US/Central time.
+    central_time = pytz.timezone('US/Central')
+    return dt.astimezone(central_time).strftime('%Y-%m-%dT%H:%M:%S')
 
 
 def get_token() -> str:
@@ -75,9 +78,8 @@ def get_lmps_for_nodes_zones_and_hubs(
 # Get the token first so you can use it in subsequent API calls.
 token = get_token()
 
-# I query for a 30 minute datetime range from the prior day.
-# In the future I should incorporate timezone logic so I don't need to do prior day.
-sced_to_dt = datetime.now() - timedelta(minutes=5, days=1)
+# I query for a 30 minute datetime range ending 5 minutes ago.
+sced_to_dt = datetime.now() - timedelta(minutes=5)
 sced_from_dt = sced_to_dt - timedelta(minutes=30)
 
 for lz in ['LZ_NORTH', 'LZ_SOUTH', 'LZ_WEST', 'LZ_HOUSTON']:
