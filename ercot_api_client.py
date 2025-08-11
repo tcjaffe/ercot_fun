@@ -25,6 +25,9 @@ LMPS_NODES_ZONES_HUBS = "https://api.ercot.com/api/public-reports/np6-788-cd/lmp
 &SCEDTimestampTo={sced_to}\
 &settlementPoint={settlement_point}"
 
+# URL to get the ERCOT API version number
+VERSION_URL = "https://api.ercot.com/api/public-reports/version"
+
 
 def _get_headers(access_token: str) -> dict[str, str]:
     return {
@@ -75,8 +78,25 @@ def get_lmps_for_nodes_zones_and_hubs(
     return response.json()['data']
 
 
+def get_api_version(access_token: str):
+    """Returns a json blob with versioning info for the ERCOT Public API."""
+    response = requests.get(
+        url=VERSION_URL,
+        headers=_get_headers(access_token),
+        timeout=30
+    )
+    if response.status_code != 200:
+        raise RuntimeError(response.json())
+
+    return response.json()
+
+
 # Get the token first so you can use it in subsequent API calls.
 token = get_token()
+
+# Print the API version
+version = get_api_version(token)
+print(version)
 
 # I query for a 30 minute datetime range ending 5 minutes ago.
 sced_to_dt = datetime.now() - timedelta(minutes=5)
