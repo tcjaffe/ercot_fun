@@ -20,6 +20,7 @@ oauth2/v2.0/token\
 &response_type=id_token"
 
 # URL to pull LMPs for loading zones, hubs and nodes.
+# NOTE: There are a bunch of missing optional params that I don't use yet
 LMPS_NODES_ZONES_HUBS = "https://api.ercot.com/api/public-reports/np6-788-cd/lmp_node_zone_hub\
 ?SCEDTimestampFrom={sced_from}\
 &SCEDTimestampTo={sced_to}\
@@ -27,6 +28,13 @@ LMPS_NODES_ZONES_HUBS = "https://api.ercot.com/api/public-reports/np6-788-cd/lmp
 
 # URL to get the ERCOT API version number
 VERSION_URL = "https://api.ercot.com/api/public-reports/version"
+
+# URL to get actual system load by weather zone
+# NOTE: There are a bunch of missing optional params that I don't use yet
+ACTUAL_LOAD_BY_WEATHER_ZONE = "https://api.ercot.com/api/public-reports/np6-345-cd/\
+act_sys_load_by_wzn\
+?operatingDayFrom={day_from}\
+&operatingDayTo={day_to}"
 
 
 def _get_headers(access_token: str) -> dict[str, str]:
@@ -91,6 +99,29 @@ def get_api_version(access_token: str):
     return response.json()
 
 
+def get_actual_load_by_weather_zone(
+    access_token: str,
+    operating_day_from: datetime,
+    operation_day_to: datetime
+):
+    """Returns actual load by weather zone."""
+    central_time = pytz.timezone('US/Central')
+    from_str = operating_day_from.astimezone(central_time).strftime('%Y-%m-%d')
+    to_str = operation_day_to.astimezone(central_time).strftime('%Y-%m-%d')
+
+    response = requests.get(
+        url=ACTUAL_LOAD_BY_WEATHER_ZONE.format(
+            day_from=from_str, day_to=to_str),
+        headers=_get_headers(access_token),
+        timeout=30
+    )
+
+    if response.status_code != 200:
+        raise RuntimeError(response.json())
+
+    return response.json()
+
+
 # Get the token first so you can use it in subsequent API calls.
 token = get_token()
 
@@ -112,3 +143,12 @@ for lz in ['LZ_NORTH', 'LZ_SOUTH', 'LZ_WEST', 'LZ_HOUSTON']:
 
     for lmp in lz_houston_lmps:
         print(lmp)
+
+actual_loads = get_actual_load_by_weather_zone(
+    access_token=token,
+    operating_day_from=datetime.now() - timedelta(days=1),
+    operation_day_to=datetime.now())
+
+print(actual_loads['fields'])
+for row in actual_loads['data']:
+    print(row)
