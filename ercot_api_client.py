@@ -149,6 +149,6 @@ actual_loads = get_actual_load_by_weather_zone(
     operating_day_from=datetime.now() - timedelta(days=1),
     operation_day_to=datetime.now())
 
-print(actual_loads['fields'])
+print([field['name'] for field in actual_loads['fields']])
 for row in actual_loads['data']:
     print(row)
